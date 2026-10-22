@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">NightNeko</string>
+    <string name="module_description">夜猫子时间：状态栏、锁屏和 Nova 时钟小组件凌晨显示为 24–27 时；锁屏与下拉面板日期、星期延续前一天，04:00 恢复。</string>
+    <string-array name="xposed_scope">
+        <item>com.android.systemui</item>
+        <item>com.teslacoilsw.launcher</item>
+    </string-array>
+</resources>
