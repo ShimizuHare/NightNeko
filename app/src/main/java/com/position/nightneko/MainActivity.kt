@@ -85,7 +85,7 @@ fun NightNekoScreen(modifier: Modifier = Modifier) {
         Text("1. 在 LSPosed 中启用 NightNeko。\n2. 作用域选择“系统界面”（com.android.systemui）和 Nova Launcher（com.teslacoilsw.launcher）。\n3. 重启手机，让模块生效。")
         Text("设备适配", style = MaterialTheme.typography.titleLarge)
         Text("努比亚 Z60 Ultra · Android 14 · MyOS 14.5\n状态栏、当前数字锁屏样式，以及 Nova 中的时钟 App 桌面小组件。")
-        Text("凌晨 00:00–03:59，锁屏与下拉面板日期、星期也延续前一天，04:00 恢复当天。系统实际日期、闹钟、通知时间、应用内时间保持正常。其他桌面启动器、锁屏主题、双时钟与息屏显示暂未适配。")
+        Text("凌晨 00:00–03:59，锁屏、下拉面板与 Nova 桌面时钟小组件的日期、星期也延续前一天，04:00 恢复当天。系统实际日期、闹钟、通知时间、应用内时间保持正常。其他桌面启动器、锁屏主题、双时钟与息屏显示暂未适配。")
         Text("此页面仅提供规则预览，不代表模块已在系统界面中生效。", style = MaterialTheme.typography.bodySmall)
     }
 }

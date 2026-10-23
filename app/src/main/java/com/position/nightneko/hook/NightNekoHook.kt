@@ -20,7 +20,7 @@ class NightNekoHook : IXposedHookLoadPackage {
 
     override fun handleLoadPackage(param: XC_LoadPackage.LoadPackageParam) {
         if (param.packageName == NOVA_LAUNCHER && param.processName == NOVA_LAUNCHER) {
-            installLauncherWidgetClockHook(param.classLoader)
+            installLauncherWidgetClockHook()
             return
         }
         if (param.packageName != SYSTEM_UI || param.processName != SYSTEM_UI) return
@@ -70,7 +70,7 @@ class NightNekoHook : IXposedHookLoadPackage {
         }
     }
 
-    private fun installLauncherWidgetClockHook(loader: ClassLoader) {
+    private fun installLauncherWidgetClockHook() {
         attempt("launcher-widget-clock-install") {
             XposedHelpers.findAndHookMethod(TextClock::class.java, "onTimeChanged", object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) = attempt("launcher-widget-clock-update") {
@@ -78,8 +78,16 @@ class NightNekoHook : IXposedHookLoadPackage {
                     if (view.id == android.view.View.NO_ID) return@attempt
                     val resources = view.resources
                     if (resources.getResourcePackageName(view.id) != CLOCK_APP) return@attempt
-                    if (resources.getResourceEntryName(view.id) != CLOCK_WIDGET_TIME_VIEW) return@attempt
+                    val entry = resources.getResourceEntryName(view.id)
+                    if (entry != CLOCK_WIDGET_TIME_VIEW && entry != CLOCK_WIDGET_DATE_VIEW) return@attempt
                     val calendar = XposedHelpers.getObjectField(view, "mTime") as? Calendar ?: return@attempt
+                    if (entry == CLOCK_WIDGET_DATE_VIEW) {
+                        rewriteWidgetDate(view, calendar)
+                        if (reported.add("clock-widget-date-view-found")) {
+                            XposedBridge.log("NightNeko: Clock app widget date/weekday view found in Nova Launcher")
+                        }
+                        return@attempt
+                    }
                     val hour = calendar.get(Calendar.HOUR_OF_DAY)
                     val text = view.text ?: return@attempt
                     val rewritten = rewrite(text, hour)
@@ -91,6 +99,25 @@ class NightNekoHook : IXposedHookLoadPackage {
                 }
             })
             XposedBridge.log("NightNeko: Nova Clock app widget hook installed")
+        }
+    }
+
+    private fun rewriteWidgetDate(view: TextClock, actual: Calendar) {
+        // onTimeChanged has already refreshed today's text; leave it intact from 04:00 onward.
+        if (actual.get(Calendar.HOUR_OF_DAY) >= 4) return
+        val format = XposedHelpers.getObjectField(view, "mFormat") as? CharSequence ?: return
+        if (format.isEmpty()) return
+        val display = (actual.clone() as Calendar).apply {
+            time = NightTime.displayDate(actual.time, actual.timeZone)
+        }
+        // Reuse the active RemoteViews pattern, including localized date order and weekday style.
+        val text = android.text.format.DateFormat.format(format, display)
+        if (view.text.toString() != text.toString()) view.text = text
+        attempt("launcher-widget-date-description") {
+            val descriptionFormat = XposedHelpers.getObjectField(view, "mDescFormat") as? CharSequence
+            if (!descriptionFormat.isNullOrEmpty()) {
+                view.contentDescription = android.text.format.DateFormat.format(descriptionFormat, display)
+            }
         }
     }
 
@@ -155,6 +182,7 @@ class NightNekoHook : IXposedHookLoadPackage {
         const val NOVA_LAUNCHER = "com.teslacoilsw.launcher"
         const val CLOCK_APP = "zte.com.cn.alarmclock"
         const val CLOCK_WIDGET_TIME_VIEW = "appwidget_text_time_mfvclr"
+        const val CLOCK_WIDGET_DATE_VIEW = "appwidget_text_day_week_mfvclr"
         const val MYOS_HOUR_CLOCK = "com.zte.mifavor.keyguard.settings.LockScreenClockClipTextClock"
     }
 }

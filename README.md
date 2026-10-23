@@ -10,15 +10,15 @@
 | 03:59 | 27:59 |
 | 04:00 | 04:00 |
 
-## 当前范围（0.3.0）
+## 当前范围（0.3.1）
 
 针对 NX721J / Android 14 / MyOS14.5.6MR6_NX721J_VG，系统界面版本 14.5.001.101.2408221539。
-ADB 检查已确认该系统具有以下方法及运行时控件；用户已确认当前版本的时间、日期/星期和桌面时钟适配正常生效。
+ADB 检查已确认该系统具有以下方法及运行时控件；用户已确认系统时间、系统日期/星期、桌面时钟小时及 0.3.1 小组件日期/星期修正正常生效。
 
 - 状态栏时间：`com.android.systemui.statusbar.policy.Clock.getSmallTime()`，保留分钟、秒数和文本样式。
 - 当前锁屏：`com.zte.mifavor.keyguard.settings.LockScreenClockClipTextClock`，仅处理资源 ID 为 `clock_hour_view` 的小时控件。
 - 锁屏与通知面板日期：使用 SystemUI 原有本地化日期格式和星期适配器；00:00–03:59 显示前一天，04:00 起显示实际日期。
-- 桌面时钟：时钟 App `zte.com.cn.alarmclock` 版本 `14.5.000.000.2406241653` 的 `HorizontalAlarmWidget`，通过 Nova Launcher 中的 `TextClock` 显示；仅处理资源 `appwidget_text_time_mfvclr`，映射与状态栏相同。
+- 桌面时钟：时钟 App `zte.com.cn.alarmclock` 版本 `14.5.000.000.2406241653` 的 `HorizontalAlarmWidget`，通过 Nova Launcher 中的 `TextClock` 显示；时间资源 `appwidget_text_time_mfvclr` 的映射与状态栏相同，日期/星期资源 `appwidget_text_day_week_mfvclr` 在 00:00–03:59 使用原有格式显示前一天，04:00 恢复当天。
 - LSPosed 作用域为 `com.android.systemui` 与 `com.teslacoilsw.launcher`，并核验主进程名；Nova 内其他 TextClock 和其他 AppWidget 不处理。
 - 仅向目标显示控件传入日期副本；不修改系统时钟、时区、Calendar、应用取时结果或真实日期。
 - 时钟 App 内部界面、闹钟、通知时间戳、其他桌面启动器、双时钟、其他主题和 AOD 不在本版范围内。
@@ -49,7 +49,9 @@ New-Item -ItemType Directory -Path "$PWD\.gradle\tmp" -Force | Out-Null
 $env:JAVA_TOOL_OPTIONS += " -Djava.io.tmpdir=$PWD\.gradle\tmp -Djdk.net.unixdomain.tmpdir=$PWD\.gradle\tmp"
 ```
 
-2026-10-22 本地验证：Debug APK 构建成功，单元测试通过，Lint 无错误。安装与真机测试由用户完成，用户已确认时间、日期/星期及 0.3.0 桌面小组件功能正常；下方清单保留供后续回归测试使用。
+2026-10-22：0.3.0 Debug APK 构建、单元测试及 Lint 通过；用户确认系统时间、系统日期/星期及桌面小组件小时显示正常。
+
+2026-10-23：0.3.1 修复小组件日期/星期未延续前一天的问题，用户已确认功能正常。Debug APK 构建成功，9 项单元测试通过，Lint 无错误；APK 签名校验通过，沿用原有 Debug 签名。新增日志 `NightNeko: Clock app widget date/weekday view found in Nova Launcher` 用于确认日期控件已匹配。
 
 ## 真机测试清单
 
@@ -57,6 +59,7 @@ $env:JAVA_TOOL_OPTIONS += " -Djava.io.tmpdir=$PWD\.gradle\tmp -Djdk.net.unixdoma
 - 00:00 → 24:00，01:xx → 25:xx，03:59 → 27:59，04:00 → 04:00。
 - 00:00–03:59 锁屏与通知面板日期/星期为昨天；04:00 恢复今天。
 - Nova 桌面时钟小组件在 00:00–03:59 与状态栏显示一致（如 `02:38` → `26:38`），04:00 恢复；分钟保持不变。
+- Nova 小组件的日期与星期在 23:59 保持当天，00:00–03:59 保持前一天，04:00 恢复实际当天；包括跨月、跨年与星期日/星期一切换。重新添加小组件、横竖屏切换及重新亮屏后也应一致。
 - 检查跨月、跨年、闰日和星期变化；同时观察状态栏、下拉面板时钟、当前锁屏小时，分钟不变。
 - 锁屏后重新亮屏、解锁、横竖屏切换后持续正常；时区变化后按控件自己的本地小时判断。
 - 分离小时/分钟的锁屏中，24–27 无裁切、错位或残影。
